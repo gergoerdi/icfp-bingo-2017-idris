@@ -7,22 +7,23 @@ import Shuffle
 import Effects
 import Effect.Random
 
-data Command = Shuffle -- | Print
+
+data Command = Shuffle | Print
 
 total grid : (n : Nat) -> (m : Nat) -> Vect (n * m) a -> Vect n (Vect m a)
 grid Z _ [] = []
 grid (S n) m xs = let (ys, yss) = splitAt m xs in ys :: grid n m yss
 
-node0 : String -> List (HtmlAttribute Void) -> List (Html Void) -> Html Void
+node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
 
-table : Vect n (Vect m String) -> Html Void
-table xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
+total table : (a -> Html ev) -> Vect n (Vect m a) -> Html ev
+table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
   where
-    cell : String -> Html Void
+    cell : a-> Html ev
     cell = node0 "td" [] . (::[]) . text
 
-    row : Vect m String -> Html Void
+    row : Vect m a -> Html ev
     row = node0 "tr" [stringAttribute "style" "height: 12ex"] . toList . map cell
 
 items : Vect 17 String
@@ -57,24 +58,26 @@ Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
 
 render : () -> BingoView -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table $ grid BingoSize BingoSize spaces]
+    [ div [] [map void $ table text $ grid BingoSize BingoSize spaces]
     , button [onclick Shuffle, cssClass "btn btn-default btn-lg noprint"]
       "Give me another one"
+    , button [onclick Print, cssClass "btn btn-primary btn-lg pull-right noprint"]
+      "Print"
     ]
 
-pageLoop : (Dom m, Monad m) => (d : Var) -> (seed : Var) -> ST m () [seed ::: State Integer, d ::: Gui {m}]
-pageLoop d seed = do
-    x <- getInput d
-    -- case x of
-    --   Shuffle => do
-    --     s <- read seed
-    --     items' <- lift $ runInit [s] $ shuffle items
-    --     domPut d $ take (BingoSize * BingoSize) items'
-    --     write seed (s + 1)
+exec : (Dom m, Monad m) => (d : Var) -> (seed : Var) -> Command -> ST m () [seed ::: State Integer, d ::: Gui {m}]
+exec d seed Shuffle = do
     s <- read seed
     items' <- lift $ runInit [s] $ shuffle items
     domPut d $ take (BingoSize * BingoSize) items'
     write seed (s + 1)
+exec d seed Print = do
+    pure ()
+
+pageLoop : (Dom m, Monad m) => (d : Var) -> (seed : Var) -> ST m () [seed ::: State Integer, d ::: Gui {m}]
+pageLoop d seed = do
+    x <- getInput d
+    exec d seed x
     pageLoop d seed
 
 page : (Dom m, Monad m) => ST m () []
