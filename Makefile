@@ -1,5 +1,5 @@
 IDRIS		= idris
-IDR_PKGS	= contrib js effects
+IDR_PKGS	= contrib js effects lightyear
 
 all: bingo.js
 

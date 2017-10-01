@@ -1,9 +1,11 @@
 module Main
 
+import Shuffle
+import RichText
+
 import Js.Dom
 import Control.ST
 import Control.ST.ImplicitCall
-import Shuffle
 import Effects
 import Effect.Random
 
@@ -17,11 +19,11 @@ grid (S n) m xs = let (ys, yss) = splitAt m xs in ys :: grid n m yss
 node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
 
-total table : (a -> Html ev) -> Vect n (Vect m a) -> Html ev
+total table : (a -> List (Html ev)) -> Vect n (Vect m a) -> Html ev
 table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
   where
     cell : a-> Html ev
-    cell = node0 "td" [] . (::[]) . text
+    cell = node0 "td" [] . text
 
     row : Vect m a -> Html ev
     row = node0 "tr" [stringAttribute "style" "height: 12ex"] . toList . map cell
@@ -29,9 +31,9 @@ table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [
 items : Vect 17 String
 items =
     [ "Generalization of monads"
-    , "<tt>Nat</tt> as an inductive type"
-    , "<tt>fac</tt> as a recursive function"
-    , "<tt>Vec</tt> as a indexed type"
+    , "*Nat* as an inductive type"
+    , "*fac* as a recursive function"
+    , "*Vec* as a indexed type"
     , "Session type that receives a list"
     , "Linear types"
     , "One slide with ≥3 type derivation rules"
@@ -58,7 +60,7 @@ Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
 
 render : () -> BingoView -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table text $ grid BingoSize BingoSize spaces]
+    [ div [] [map void $ table (either (const $ pure $ text "") id . parse) $ grid BingoSize BingoSize spaces]
     , button [onclick Shuffle, cssClass "btn btn-default btn-lg noprint"]
       "Give me another one"
     , button [onclick Print, cssClass "btn btn-primary btn-lg pull-right noprint"]
@@ -92,5 +94,5 @@ main : JS_IO ()
 main = setASync_ $ run page
 
 -- Local Variables:
--- idris-load-packages: ("contrib" "js" "effects")
+-- idris-load-packages: ("contrib" "js" "effects" "lightyear")
 -- End:
