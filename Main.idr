@@ -67,22 +67,25 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
       "Print"
     ]
 
-exec : (Dom m, Monad m) => (d : Var) -> (seed : Var) -> Command -> ST m () [seed ::: State Integer, d ::: Gui {m}]
+printPage : ST ASync () []
+printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
+
+exec : (d : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, d ::: Gui {m =  ASync}]
 exec d seed Shuffle = do
     s <- read seed
     items' <- lift $ runInit [s] $ shuffle items
     domPut d $ take (BingoSize * BingoSize) items'
     write seed (s + 1)
 exec d seed Print = do
-    pure ()
+    printPage
 
-pageLoop : (Dom m, Monad m) => (d : Var) -> (seed : Var) -> ST m () [seed ::: State Integer, d ::: Gui {m}]
+pageLoop : (d : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, d ::: Gui {m = ASync}]
 pageLoop d seed = do
     x <- getInput d
     exec d seed x
     pageLoop d seed
 
-page : (Dom m, Monad m) => ST m () []
+page : ST ASync () []
 page = do
     dom <- initBody [] render () $ take (BingoSize * BingoSize) items
     seed <- new 0
