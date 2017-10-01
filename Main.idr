@@ -60,10 +60,10 @@ Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
 
 render : () -> BingoView -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table (either (const $ pure $ text "") id . parse) $ grid BingoSize BingoSize spaces]
-    , button [onclick Shuffle, cssClass "btn btn-default btn-lg noprint"]
+    [ div [] [map void $ table parse $ grid BingoSize BingoSize spaces]
+    , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
       "Give me another one"
-    , button [onclick Print, cssClass "btn btn-primary btn-lg pull-right noprint"]
+    , button [onclick Print, cssClass "btn btn-lg noprint btn-primary pull-right"]
       "Print"
     ]
 
@@ -97,5 +97,5 @@ main : JS_IO ()
 main = setASync_ $ run page
 
 -- Local Variables:
--- idris-load-packages: ("contrib" "js" "effects" "lightyear")
+-- idris-load-packages: ("contrib" "js" "effects")
 -- End:
