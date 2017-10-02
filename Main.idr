@@ -70,20 +70,20 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-exec : (d : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, d ::: Gui {m =  ASync}]
-exec d seed Shuffle = do
+exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
+exec dom seed Shuffle = do
     s <- read seed
     items' <- lift $ runInit [s] $ shuffle items
-    domPut d $ take (BingoSize * BingoSize) items'
+    domPut dom $ take (BingoSize * BingoSize) items'
     write seed (s + 1)
-exec d seed Print = do
+exec dom seed Print = do
     printPage
 
-pageLoop : (d : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, d ::: Gui {m = ASync}]
-pageLoop d seed = do
-    x <- getInput d
-    exec d seed x
-    pageLoop d seed
+pageLoop : (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
+pageLoop dom seed = do
+    cmd <- getInput dom
+    exec dom seed cmd
+    pageLoop dom seed
 
 page : ST ASync () []
 page = do
