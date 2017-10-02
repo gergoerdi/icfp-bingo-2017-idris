@@ -87,9 +87,13 @@ pageLoop dom seed = do
 
 page : ST ASync () []
 page = do
-    dom <- initBody [] render () $ take (BingoSize * BingoSize) items
-    seed <- new 0
+    dom <- initBody [] render () $ pure ""
+    now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
+    seed <- new $ cast now
+
+    exec dom seed Shuffle
     pageLoop dom seed
+
     delete seed
     clearDom dom
 
