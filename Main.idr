@@ -31,9 +31,9 @@ table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [
 items : Vect 17 String
 items =
     [ "Generalization of monads"
-    , "*Nat* as an inductive type"
-    , "*fac* as a recursive function"
-    , "*Vec* as a indexed type"
+    , "`Nat` as an inductive type"
+    , "`fac` as a recursive function"
+    , "`Vec` as a indexed type"
     , "Session type that receives a list"
     , "Linear types"
     , "One slide with ≥3 type derivation rules"
