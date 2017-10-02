@@ -8,6 +8,7 @@ import Control.ST
 import Control.ST.ImplicitCall
 import Effects
 import Effect.Random
+import EffectToST
 
 
 data Command = Shuffle | Print
@@ -72,9 +73,7 @@ printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
 exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
 exec dom seed Shuffle = do
-    s <- read seed
-    (items' ** [s']) <- lift $ runEnv [s] $ shuffle items
-    write seed s'
+    items' <- call $ liftEff seed $ shuffle items
     domPut dom $ take (BingoSize * BingoSize) items'
 exec dom seed Print = do
     printPage
