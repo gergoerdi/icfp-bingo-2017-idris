@@ -73,9 +73,9 @@ printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
 exec dom seed Shuffle = do
     s <- read seed
-    items' <- lift $ runInit [s] $ shuffle items
+    (items' ** [s']) <- lift $ runEnv [s] $ shuffle items
+    write seed s'
     domPut dom $ take (BingoSize * BingoSize) items'
-    write seed (s + 1)
 exec dom seed Print = do
     printPage
 
