@@ -62,18 +62,19 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync} 4]
-exec dom seed Shuffle = do
+exec : (items : Vect (16 + _) String) -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync} 4]
+-- exec : (items : Vect (fst (spaceCount n) + _) String) -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync} n]
+exec items dom seed Shuffle = do
     items' <- call $ liftEff seed $ shuffle items
-    domPut dom (take 16 items', ())
-exec dom seed Print = do
+    domPut dom (take _ items', ())
+exec _ _ _ Print = do
     printPage
 
-pageLoop : (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync} 4]
-pageLoop dom seed = do
+pageLoop : (items : Vect (16 + _) String) -> (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync} 4]
+pageLoop items dom seed = do
     cmd <- getInput dom
-    exec dom seed cmd
-    pageLoop dom seed
+    exec items dom seed cmd
+    pageLoop items dom seed
 
 page : ST ASync () []
 page = do
@@ -81,8 +82,9 @@ page = do
     now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
     seed <- new $ cast now
 
-    exec dom seed Shuffle
-    pageLoop dom seed
+    items <- call $ liftEff seed $ shuffle items
+    domPut dom (take _ items, ())
+    pageLoop items dom seed
 
     delete seed
     clearDom dom
