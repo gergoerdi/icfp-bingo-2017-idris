@@ -2,6 +2,7 @@ module Main
 
 import Shuffle
 import RichText
+import Bingo
 
 import Js.Dom
 import Control.ST
@@ -12,10 +13,6 @@ import EffectToST
 
 
 data Command = Shuffle | Print
-
-total grid : (n : Nat) -> (m : Nat) -> Vect (n * m) a -> Vect n (Vect m a)
-grid Z _ [] = []
-grid (S n) m xs = let (ys, yss) = splitAt m xs in ys :: grid n m yss
 
 node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
@@ -50,18 +47,12 @@ items =
     , "JavaScript (non-sarcastically)"
     ]
 
-BingoSize : Nat
-BingoSize = 4
+Gui : (Dom m) => Nat -> Type
+Gui {m} n = DomRef {m} () (const $ Bingo n String) (const Command) ()
 
-BingoView : Type
-BingoView = Vect (BingoSize * BingoSize) String
-
-Gui : (Dom m) => Type
-Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
-
-render : () -> BingoView -> Html Command
+render : () -> Bingo n String -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table parse $ grid BingoSize BingoSize spaces]
+    [ div [] [map void $ table parse $ grid spaces]
     , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
       "Give me another one"
     , button [onclick Print, cssClass "btn btn-lg noprint btn-primary pull-right"]
@@ -71,14 +62,14 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
+exec : (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync} 4]
 exec dom seed Shuffle = do
     items' <- call $ liftEff seed $ shuffle items
-    domPut dom $ take (BingoSize * BingoSize) items'
+    domPut dom (take 16 items', ())
 exec dom seed Print = do
     printPage
 
-pageLoop : (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
+pageLoop : (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync} 4]
 pageLoop dom seed = do
     cmd <- getInput dom
     exec dom seed cmd
@@ -86,7 +77,7 @@ pageLoop dom seed = do
 
 page : ST ASync () []
 page = do
-    dom <- initBody [] render () $ pure ""
+    dom <- initBody [] (render {n = 4}) () (pure "", ())
     now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
     seed <- new $ cast now
 
