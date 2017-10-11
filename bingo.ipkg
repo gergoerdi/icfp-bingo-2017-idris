@@ -1,0 +1,9 @@
+package bingo
+
+sourcedir = src
+
+pkgs = contrib, js, effects
+
+executable = bingo.js
+main = Bingo.Main
+opts = "--codegen javascript"
