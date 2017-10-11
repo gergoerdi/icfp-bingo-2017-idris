@@ -8,7 +8,7 @@ main = runPage $
     [ "Generalization of monads"
     , "`Nat` as an inductive type"
     , "`fac` as a recursive function"
-    , "`Vec` as a indexed type"
+    , "`Vec` as an indexed type"
     , "Session type that receives a list"
     , "Linear types"
     , "One slide with ≥3 type derivation rules"
