@@ -1,6 +1,6 @@
 module Main
 
-import WebBingo
+import Bingo.Web
 import Data.Vect
 
 main : JS_IO ()

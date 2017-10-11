@@ -1,4 +1,4 @@
-module EffectToST
+module Control.ST.LiftEffect
 
 import Control.ST
 import Effects

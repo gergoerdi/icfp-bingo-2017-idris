@@ -1,14 +1,14 @@
-module WebBingo
+module Bingo.Web
 
-import Shuffle
-import RichText
+import Bingo.RichText
 
 import Js.Dom
 import Control.ST
 import Control.ST.ImplicitCall
 import Effects
 import Effect.Random
-import EffectToST
+import Effect.Random.Shuffle
+import Control.ST.LiftEffect
 
 
 data Command = Shuffle | Print

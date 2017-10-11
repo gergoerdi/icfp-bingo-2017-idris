@@ -1,4 +1,4 @@
-module RichText
+module Bingo.RichText
 
 import Js.Dom
 

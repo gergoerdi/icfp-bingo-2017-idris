@@ -1,4 +1,4 @@
-module Shuffle
+module Effect.Random.Shuffle
 
 import Effects
 import Effect.Random
