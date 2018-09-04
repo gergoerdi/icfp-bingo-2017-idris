@@ -1,6 +1,7 @@
 module Bingo.Web
 
 import Bingo.RichText
+import Bingo.Bingo
 
 import Js.Dom
 import Control.ST
@@ -13,34 +14,37 @@ import Control.ST.LiftEffect
 
 data Command = Shuffle | Print
 
-total grid : (n : Nat) -> (m : Nat) -> Vect (n * m) a -> Vect n (Vect m a)
-grid Z _ [] = []
-grid (S n) m xs = let (ys, yss) = splitAt m xs in ys :: grid n m yss
-
 node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
 
-total table : (a -> List (Html ev)) -> Vect n (Vect m a) -> Html ev
-table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
+total table : Vect n (Vect m (Html ev)) -> Html ev
+table xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
   where
-    cell : a-> Html ev
-    cell = node0 "td" [] . text
-
-    row : Vect m a -> Html ev
-    row = node0 "tr" [stringAttribute "style" "height: 12ex"] . toList . map cell
+    row : Vect m (Html ev) -> Html ev
+    row = node0 "tr" [stringAttribute "style" "height: 12ex"] . toList
 
 public export BingoSize : Nat
-BingoSize = 4
+BingoSize = 5
+
+FreeSpace : Html Void
+FreeSpace = node0 "td" [stringAttribute "style" "background: #ddd"]
+    [ text "FREE "
+    , node "strike" (the (List $ HtmlAttribute _) []) . pure . text $ "MONAD"
+    , text " SPACE"
+    ]
 
 BingoView : Type
-BingoView = Vect (BingoSize * BingoSize) String
+BingoView = Bingo BingoSize (Html Void)
+
+toBingo : Vect (BingoSize * BingoSize + _) String -> BingoView
+toBingo items = mkBingo BingoSize (FreeSpace, map (node0 "td" [] . parse) $ take (BingoSize * BingoSize - 1) items)
 
 Gui : (Dom m) => Type
 Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
 
 render : () -> BingoView -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table parse $ grid BingoSize BingoSize spaces]
+    [ div [] [map void $ table $ grid spaces]
     , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
       "Give me another one"
     , button [onclick Print, cssClass "btn btn-lg noprint btn-primary pull-right"]
@@ -53,7 +57,8 @@ printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 exec : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
 exec items dom seed Shuffle = do
     items' <- call $ liftEff seed $ shuffle items
-    domPut dom $ take (BingoSize * BingoSize) items'
+    domPut dom $ toBingo items'
+    pure ()
 exec items dom seed Print = do
     printPage
 
@@ -65,7 +70,7 @@ pageLoop items dom seed = do
 
 page : Vect (BingoSize * BingoSize + _) String -> ST ASync () []
 page items = do
-    dom <- initBody [] render () $ pure ""
+    dom <- initBody [] render () $ toBingo items
     now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
     seed <- new $ cast now
 
