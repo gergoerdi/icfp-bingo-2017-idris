@@ -22,4 +22,12 @@ main = runPage $
     , "Proof relevance"
     , "Quotient types"
     , "JavaScript (non-sarcastically)"
+    , "Shirt joke"
+    , "Hoare triplets"
+    , "DSL"
+    , "FRP"
+    , "HoTT"
+    , "Static tracking of computational cost"
+    , "`reverse` as a tail-recursive function w/accumulator"
+    , "Pi-calculus"
     ]
