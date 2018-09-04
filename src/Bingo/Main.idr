@@ -23,7 +23,3 @@ main = runPage $
     , "Quotient types"
     , "JavaScript (non-sarcastically)"
     ]
-
--- Local Variables:
--- idris-load-packages: ("contrib" "js" "effects")
--- End:

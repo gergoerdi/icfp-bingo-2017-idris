@@ -77,7 +77,3 @@ page items = do
 
 export runPage : Vect (BingoSize * BingoSize + _) String -> JS_IO ()
 runPage items = setASync_ $ run (page items)
-
--- Local Variables:
--- idris-load-packages: ("contrib" "js" "effects")
--- End:

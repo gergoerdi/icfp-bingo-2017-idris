@@ -32,7 +32,3 @@ parse = finish . foldl step (Plain, [], []) . unpack
 
     finish : (FragMode, List Char, List (Html ev)) -> List (Html ev)
     finish (mode, overhang, frags) = reverse $ if isNil overhang then frags else frag mode overhang :: frags
-
--- Local Variables:
--- idris-load-packages: ("js")
--- End:

@@ -13,7 +13,3 @@ shuffle {n = S n} xs@(x :: xs') = do
     let x' = index k xs
     let (_ :: xs') = replaceAt k x xs
     (x' ::) <$> shuffle xs'
-
--- Local Variables:
--- idris-load-packages: ("contrib" "effects")
--- End:

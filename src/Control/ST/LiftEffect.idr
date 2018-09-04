@@ -11,7 +11,3 @@ liftEff var prog = do
     (r ** [s']) <- lift $ runEnv [s] prog
     write var s'
     pure r
-
--- Local Variables:
--- idris-load-packages: ("contrib" "effects")
--- End:
