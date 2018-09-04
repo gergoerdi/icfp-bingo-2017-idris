@@ -4,8 +4,6 @@ import Effects
 import Effect.Random
 import Data.Vect
 
-%default total
-
 export shuffle : Vect n a -> Eff (Vect n a) [RND]
 shuffle [] = pure []
 shuffle {n = S n} xs@(x :: xs') = do
