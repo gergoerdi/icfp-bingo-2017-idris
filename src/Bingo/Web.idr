@@ -14,7 +14,7 @@ import Control.ST.LiftEffect
 
 data Command = Shuffle | Print
 
-node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
+export node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
 
 total table : Vect n (Vect m (Html ev)) -> Html ev
@@ -26,18 +26,11 @@ table xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ t
 public export BingoSize : Nat
 BingoSize = 5
 
-FreeSpace : Html Void
-FreeSpace = node0 "td" [stringAttribute "style" "background: #ddd"]
-    [ text "FREE "
-    , node "strike" (the (List $ HtmlAttribute _) []) . pure . text $ "MONAD"
-    , text " SPACE"
-    ]
-
 BingoView : Type
 BingoView = Bingo BingoSize (Html Void)
 
-toBingo : Vect (BingoSize * BingoSize + _) String -> BingoView
-toBingo items = mkBingo BingoSize (FreeSpace, map (node0 "td" [] . parse) $ take (BingoSize * BingoSize - 1) items)
+toBingo : Html Void -> Vect (BingoSize * BingoSize + _) String -> BingoView
+toBingo freeSpace items = mkBingo BingoSize (freeSpace, map (node0 "td" [] . parse) $ take (BingoSize * BingoSize - 1) items)
 
 Gui : (Dom m) => Type
 Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
@@ -54,31 +47,43 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-exec : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
-exec items dom seed Shuffle = do
+exec
+    : Vect (S _) (Html Void)
+    -> Vect (BingoSize * BingoSize + _) String
+    -> (dom : Var)
+    -> (seed : Var)
+    -> Command
+    -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
+exec freeSpaces items dom seed Shuffle = do
     items' <- call $ liftEff seed $ shuffle items
-    domPut dom $ toBingo items'
+    freeSpace <- call $ liftEff seed $ rndSelect' freeSpaces
+    domPut dom $ toBingo freeSpace items'
     pure ()
-exec items dom seed Print = do
+exec freeSpaces items dom seed Print = do
     printPage
 
-pageLoop : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
-pageLoop items dom seed = do
+pageLoop
+    : Vect (S _) (Html Void)
+    -> Vect (BingoSize * BingoSize + _) String
+    -> (dom : Var)
+    -> (seed : Var)
+    -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
+pageLoop freeSpaces items dom seed = do
     cmd <- getInput dom
-    exec items dom seed cmd
-    pageLoop items dom seed
+    exec freeSpaces items dom seed cmd
+    pageLoop freeSpaces items dom seed
 
-page : Vect (BingoSize * BingoSize + _) String -> ST ASync () []
-page items = do
-    dom <- initBody [] render () $ toBingo items
+page : Vect (S _) (Html Void) -> Vect (BingoSize * BingoSize + _) String -> ST ASync () []
+page freeSpaces items = do
+    dom <- initBody [] render () $ toBingo (text "") (replicate (BingoSize * BingoSize) "")
     now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
     seed <- new $ cast now
 
-    exec items dom seed Shuffle
-    pageLoop items dom seed
+    exec freeSpaces items dom seed Shuffle
+    pageLoop freeSpaces items dom seed
 
     delete seed
     clearDom dom
 
-export runPage : Vect (BingoSize * BingoSize + _) String -> JS_IO ()
-runPage items = setASync_ $ run (page items)
+export runPage : Vect (S _) (Html Void) -> Vect (BingoSize * BingoSize + _) String -> JS_IO ()
+runPage freeSpaces items = setASync_ $ run $ page freeSpaces items

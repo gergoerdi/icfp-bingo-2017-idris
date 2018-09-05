@@ -2,9 +2,27 @@ module Main
 
 import Bingo.Web
 import Data.Vect
+import Js.Dom
 
-main : JS_IO ()
-main = runPage $
+freeSpaces : List (Html Void)
+freeSpaces =
+    [ square
+      [ text "FREE "
+      , node "strike" (the (List $ HtmlAttribute _) []) . pure . text $ "MONAD"
+      , text " SPACE"
+      ]
+    , square
+      [ text "FREE "
+      , node "strike" (the (List $ HtmlAttribute _) []) . pure . text $ "ALGEBRA"
+      , text " SPACE"
+      ]
+    ]
+  where
+    square : List (Html Void) -> Html Void
+    square = node0 "td" [stringAttribute "style" "background: #ddd"]
+
+items : List String
+items =
     [ "Generalization of monads"
     , "`Nat` as an inductive type"
     , "`fac` as a recursive function"
@@ -31,3 +49,6 @@ main = runPage $
     , "`reverse` as a tail-recursive function w/accumulator"
     , "Pi-calculus"
     ]
+
+main : JS_IO ()
+main = runPage (fromList freeSpaces) (fromList items)
