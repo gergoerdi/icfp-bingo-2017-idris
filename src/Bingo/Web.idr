@@ -1,7 +1,5 @@
 module Bingo.Web
 
-import Bingo.RichText
-
 import Js.Dom
 import Control.ST
 import Control.ST.ImplicitCall
@@ -23,7 +21,7 @@ node0 = node
 total table : (a -> List (Html ev)) -> Vect n (Vect m a) -> Html ev
 table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ toList $ map row xs]
   where
-    cell : a-> Html ev
+    cell : a -> Html ev
     cell = node0 "td" [] . text
 
     row : Vect m a -> Html ev
@@ -40,7 +38,7 @@ Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
 
 render : () -> BingoView -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
-    [ div [] [map void $ table parse $ grid BingoSize BingoSize spaces]
+    [ div [] [map void $ table (pure . text) $ grid BingoSize BingoSize spaces]
     , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
       "Give me another one"
     , button [onclick Print, cssClass "btn btn-lg noprint btn-primary pull-right"]
