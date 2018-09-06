@@ -48,12 +48,20 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-makeSheet : Vect (BingoSize * BingoSize + _) String -> (seed : Var) -> ST ASync BingoSheet [seed ::: State Integer]
+makeSheet
+    : Vect (BingoSize * BingoSize + _) String
+    -> (seed : Var)
+    -> ST ASync BingoSheet [seed ::: State Integer]
 makeSheet items seed = do
     items' <- call $ liftEff seed $ shuffle items
     pure $ take (BingoSize * BingoSize) items'
 
-exec : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
+exec
+    : Vect (BingoSize * BingoSize + _) String
+    -> (dom : Var)
+    -> (seed : Var)
+    -> Command
+    -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
 exec items dom seed cmd = case cmd of
     Shuffle => do
         sheet <- makeSheet items seed
@@ -61,7 +69,11 @@ exec items dom seed cmd = case cmd of
     Print => do
         printPage
 
-pageLoop : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
+pageLoop
+    : Vect (BingoSize * BingoSize + _) String
+    -> (dom : Var)
+    -> (seed : Var)
+    -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
 pageLoop items dom seed = do
     cmd <- getInput dom
     exec items dom seed cmd
@@ -79,8 +91,8 @@ page items = do
 
     pageLoop items dom seed
 
-    delete seed
     clearDom dom
+    delete seed
 
 export runPage : Vect (BingoSize * BingoSize + _) String -> JS_IO ()
 runPage items = setASync_ $ run (page items)
