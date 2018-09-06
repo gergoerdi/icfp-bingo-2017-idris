@@ -9,8 +9,6 @@ import Effect.Random.Shuffle
 import Control.ST.LiftEffect
 
 
-data Command = Shuffle | Print
-
 total grid : (n : Nat) -> (m : Nat) -> Vect (n * m) a -> Vect n (Vect m a)
 grid Z _ [] = []
 grid (S n) m xs = let (ys, yss) = splitAt m xs in ys :: grid n m yss
@@ -30,13 +28,15 @@ table text xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [
 public export BingoSize : Nat
 BingoSize = 4
 
-BingoView : Type
-BingoView = Vect (BingoSize * BingoSize) String
+BingoSheet : Type
+BingoSheet = Vect (BingoSize * BingoSize) String
+
+data Command = Shuffle | Print
 
 Gui : (Dom m) => Type
-Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
+Gui {m} = DomRef {m} () (const BingoSheet) (const Command) ()
 
-render : () -> BingoView -> Html Command
+render : () -> BingoSheet -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
     [ div [] [map void $ table (pure . text) $ grid BingoSize BingoSize spaces]
     , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
@@ -48,12 +48,18 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
-exec : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
-exec items dom seed Shuffle = do
+makeSheet : Vect (BingoSize * BingoSize + _) String -> (seed : Var) -> ST ASync BingoSheet [seed ::: State Integer]
+makeSheet items seed = do
     items' <- call $ liftEff seed $ shuffle items
-    domPut dom $ take (BingoSize * BingoSize) items'
-exec items dom seed Print = do
-    printPage
+    pure $ take (BingoSize * BingoSize) items'
+
+exec : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> Command -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
+exec items dom seed cmd = case cmd of
+    Shuffle => do
+        sheet <- makeSheet items seed
+        domPut dom sheet
+    Print => do
+        printPage
 
 pageLoop : Vect (BingoSize * BingoSize + _) String -> (dom : Var) -> (seed : Var) -> ST ASync () [seed ::: State Integer, dom ::: Gui {m = ASync}]
 pageLoop items dom seed = do
@@ -63,11 +69,14 @@ pageLoop items dom seed = do
 
 page : Vect (BingoSize * BingoSize + _) String -> ST ASync () []
 page items = do
-    dom <- initBody [] render () $ pure ""
-    now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
-    seed <- new $ cast now
+    seed <- do
+        now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
+        new $ cast now
 
-    exec items dom seed Shuffle
+    dom <- do
+        sheet <- makeSheet items seed
+        initBody [] render () sheet
+
     pageLoop items dom seed
 
     delete seed
