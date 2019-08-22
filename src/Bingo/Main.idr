@@ -48,6 +48,10 @@ items =
     , "Static tracking of computational cost"
     , "`reverse` as a tail-recursive function w/accumulator"
     , "Pi-calculus"
+    , "SMT solvers"
+    , "Row polymorphism"
+    , "Symbolic execution"
+    , "Gradual typing"
     ]
 
 main : JS_IO ()
