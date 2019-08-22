@@ -12,8 +12,6 @@ import Effect.Random.Shuffle
 import Control.ST.LiftEffect
 
 
-data Command = Shuffle | Print
-
 export node0 : String -> List (HtmlAttribute ev) -> List (Html ev) -> Html ev
 node0 = node
 
@@ -26,16 +24,18 @@ table xs = node0 "table" [cssClass "table table-bordered"] [node0 "tbody" [] $ t
 public export BingoSize : Nat
 BingoSize = 5
 
-BingoView : Type
-BingoView = Bingo BingoSize (Html Void)
+BingoSheet : Type
+BingoSheet = Bingo BingoSize (Html Void)
 
-toBingo : Html Void -> Vect (BingoSize * BingoSize + _) String -> BingoView
+data Command = Shuffle | Print
+
+toBingo : Html Void -> Vect (BingoSize * BingoSize + _) String -> BingoSheet
 toBingo freeSpace items = mkBingo BingoSize (freeSpace, map (node0 "td" [] . parse) $ take (BingoSize * BingoSize - 1) items)
 
 Gui : (Dom m) => Type
-Gui {m} = DomRef {m} () (const BingoView) (const Command) ()
+Gui {m} = DomRef {m} () (const BingoSheet) (const Command) ()
 
-render : () -> BingoView -> Html Command
+render : () -> BingoSheet -> Html Command
 render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; margin: auto"]
     [ div [] [map void $ table $ grid spaces]
     , button [onclick Shuffle, cssClass "btn btn-lg noprint btn-default"]
@@ -47,6 +47,17 @@ render () spaces = div [stringAttribute "style" "width: 100%; max-width: 600px; 
 printPage : ST ASync () []
 printPage = lift . liftJS_IO $ jscall "window.print()" (JS_IO ())
 
+
+makeSheet
+    : Vect (S _) (Html Void)
+    -> Vect (BingoSize * BingoSize + _) String
+    -> (seed : Var)
+    -> ST ASync BingoSheet [seed ::: State Integer]
+makeSheet freeSpaces items seed = do
+    items' <- call $ liftEff seed $ shuffle items
+    freeSpace <- call $ liftEff seed $ rndSelect' freeSpaces
+    pure $ toBingo freeSpace items'
+
 exec
     : Vect (S _) (Html Void)
     -> Vect (BingoSize * BingoSize + _) String
@@ -54,13 +65,12 @@ exec
     -> (seed : Var)
     -> Command
     -> ST ASync () [seed ::: State Integer, dom ::: Gui {m =  ASync}]
-exec freeSpaces items dom seed Shuffle = do
-    items' <- call $ liftEff seed $ shuffle items
-    freeSpace <- call $ liftEff seed $ rndSelect' freeSpaces
-    domPut dom $ toBingo freeSpace items'
-    pure ()
-exec freeSpaces items dom seed Print = do
-    printPage
+exec freeSpaces items dom seed cmd = case cmd of
+    Shuffle => do
+        sheet <- makeSheet freeSpaces items seed
+        domPut dom sheet
+    Print => do
+        printPage
 
 pageLoop
     : Vect (S _) (Html Void)
@@ -75,15 +85,17 @@ pageLoop freeSpaces items dom seed = do
 
 page : Vect (S _) (Html Void) -> Vect (BingoSize * BingoSize + _) String -> ST ASync () []
 page freeSpaces items = do
-    dom <- initBody [] render () $ toBingo (text "") (replicate (BingoSize * BingoSize) "")
-    now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
-    seed <- new $ cast now
+    seed <- do
+        now <- lift . liftJS_IO $ jscall "new Date().getTime()" (JS_IO Int)
+        new $ cast now
+    dom <- do
+        sheet <- makeSheet freeSpaces items seed
+        initBody [] render () sheet
 
-    exec freeSpaces items dom seed Shuffle
     pageLoop freeSpaces items dom seed
 
-    delete seed
     clearDom dom
+    delete seed
 
 export runPage : Vect (S _) (Html Void) -> Vect (BingoSize * BingoSize + _) String -> JS_IO ()
 runPage freeSpaces items = setASync_ $ run $ page freeSpaces items
